@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: campuspass
+      POSTGRES_USER: campuspass
+      POSTGRES_PASSWORD: campuspass_dev_only
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U campuspass -d campuspass"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    volumes:
+      - campuspass_postgres:/var/lib/postgresql/data
+
+volumes:
+  campuspass_postgres:

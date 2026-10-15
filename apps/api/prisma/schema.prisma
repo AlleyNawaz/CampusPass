@@ -1,0 +1,567 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UniversityStatus {
+  DRAFT
+  ACTIVE
+  SUSPENDED
+  ARCHIVED
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  DELETION_PENDING
+  ANONYMIZED
+}
+
+enum SocietyStatus {
+  APPLIED
+  APPROVED
+  REJECTED
+  SUSPENDED
+  ARCHIVED
+}
+
+enum Role {
+  STUDENT
+  ORGANIZER
+  SOCIETY_ADMIN
+  FINANCE_MANAGER
+  GATE_STAFF
+  UNIVERSITY_ADMIN
+  PLATFORM_ADMIN
+  SUPPORT
+}
+
+enum GrantScope {
+  PLATFORM
+  UNIVERSITY
+  SOCIETY
+  EVENT
+}
+
+enum EventStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  PUBLISHED
+  COMPLETED
+  REJECTED
+  CANCELLED
+  ARCHIVED
+}
+
+enum EventVisibility {
+  PUBLIC
+  CAMPUS_ONLY
+  INVITE_ONLY
+}
+
+enum OrderStatus {
+  CREATED
+  RESERVED
+  PAYMENT_PENDING
+  PAID
+  CONFIRMED
+  FULFILLED
+  EXPIRED
+  FAILED
+  CANCELLED
+  PARTIALLY_REFUNDED
+  REFUNDED
+}
+
+enum TicketStatus {
+  ACTIVE
+  CHECKED_IN
+  TRANSFERRED_OUT
+  REFUNDED
+  REVOKED
+  EXPIRED
+}
+
+enum AdmissionOutcome {
+  ADMITTED
+  ALREADY_USED
+  WRONG_EVENT
+  WRONG_GATE
+  REVOKED
+  REFUNDED
+  EXPIRED
+  UNAUTHORIZED
+  INVALID_CREDENTIAL
+}
+
+enum OutboxStatus {
+  PENDING
+  PROCESSING
+  PUBLISHED
+  FAILED
+}
+
+model University {
+  id          String           @id @default(uuid()) @db.Uuid
+  slug        String           @unique @db.VarChar(100)
+  name        String           @db.VarChar(200)
+  status      UniversityStatus @default(DRAFT)
+  timezone    String           @default("Asia/Karachi") @db.VarChar(100)
+  countryCode String           @default("PK") @map("country_code") @db.Char(2)
+  settings    Json             @default("{}")
+  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  campuses    Campus[]
+  users       User[]
+  societies   Society[]
+  venues      Venue[]
+  events      Event[]
+  roleGrants  RoleGrant[]
+  orders      Order[]
+
+  @@map("universities")
+}
+
+model Campus {
+  id           String     @id @default(uuid()) @db.Uuid
+  universityId String     @map("university_id") @db.Uuid
+  slug         String     @db.VarChar(100)
+  name         String     @db.VarChar(200)
+  timezone     String     @default("Asia/Karachi") @db.VarChar(100)
+  active       Boolean    @default(true)
+  settings     Json       @default("{}")
+  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+  university   University @relation(fields: [universityId], references: [id], onDelete: Restrict)
+  venues       Venue[]
+  events       Event[]
+
+  @@unique([universityId, slug])
+  @@index([universityId, active])
+  @@map("campuses")
+}
+
+model User {
+  id              String              @id @default(uuid()) @db.Uuid
+  universityId    String?             @map("university_id") @db.Uuid
+  emailNormalized String              @unique @map("email_normalized") @db.VarChar(320)
+  displayName     String              @map("display_name") @db.VarChar(120)
+  status          UserStatus          @default(PENDING)
+  locale          String              @default("en-PK") @db.VarChar(20)
+  timezone        String              @default("Asia/Karachi") @db.VarChar(100)
+  emailVerifiedAt DateTime?           @map("email_verified_at") @db.Timestamptz(6)
+  deletedAt       DateTime?           @map("deleted_at") @db.Timestamptz(6)
+  createdAt       DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+  university      University?         @relation(fields: [universityId], references: [id], onDelete: Restrict)
+  roleGrants      RoleGrant[]
+  societyMembers  SocietyMembership[]
+  orders          Order[]
+  ownedTickets    Ticket[]            @relation("TicketOwner")
+  eventStaff      EventStaff[]
+  scanSessions    ScanSession[]
+  admissions      Admission[]
+  scanAttempts    ScanAttempt[]
+
+  @@index([universityId, status])
+  @@map("users")
+}
+
+model Society {
+  id           String              @id @default(uuid()) @db.Uuid
+  universityId String              @map("university_id") @db.Uuid
+  slug         String              @db.VarChar(100)
+  name         String              @db.VarChar(200)
+  description  String?             @db.Text
+  status       SocietyStatus       @default(APPLIED)
+  createdAt    DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+  university   University          @relation(fields: [universityId], references: [id], onDelete: Restrict)
+  memberships  SocietyMembership[]
+  events       Event[]
+
+  @@unique([universityId, slug])
+  @@index([universityId, status])
+  @@map("societies")
+}
+
+model SocietyMembership {
+  id           String    @id @default(uuid()) @db.Uuid
+  universityId String    @map("university_id") @db.Uuid
+  societyId    String    @map("society_id") @db.Uuid
+  userId       String    @map("user_id") @db.Uuid
+  role         Role
+  active       Boolean   @default(true)
+  expiresAt    DateTime? @map("expires_at") @db.Timestamptz(6)
+  revokedAt    DateTime? @map("revoked_at") @db.Timestamptz(6)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  society      Society   @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  user         User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([societyId, userId, role])
+  @@index([universityId, userId, active])
+  @@map("society_memberships")
+}
+
+model RoleGrant {
+  id           String      @id @default(uuid()) @db.Uuid
+  universityId String?     @map("university_id") @db.Uuid
+  userId       String      @map("user_id") @db.Uuid
+  role         Role
+  scopeType    GrantScope  @map("scope_type")
+  scopeId      String?     @map("scope_id") @db.Uuid
+  validFrom    DateTime    @default(now()) @map("valid_from") @db.Timestamptz(6)
+  validUntil   DateTime?   @map("valid_until") @db.Timestamptz(6)
+  revokedAt    DateTime?   @map("revoked_at") @db.Timestamptz(6)
+  createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+  university   University? @relation(fields: [universityId], references: [id], onDelete: Restrict)
+  user         User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([universityId, userId, role, revokedAt])
+  @@map("role_grants")
+}
+
+model Venue {
+  id                 String      @id @default(uuid()) @db.Uuid
+  universityId       String      @map("university_id") @db.Uuid
+  campusId           String      @map("campus_id") @db.Uuid
+  name               String      @db.VarChar(200)
+  capacity           Int
+  addressText        String      @map("address_text") @db.Text
+  accessibilityNotes String?     @map("accessibility_notes") @db.Text
+  active             Boolean     @default(true)
+  createdAt          DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+  university         University  @relation(fields: [universityId], references: [id], onDelete: Restrict)
+  campus             Campus      @relation(fields: [campusId], references: [id], onDelete: Restrict)
+  gates              VenueGate[]
+  events             Event[]
+
+  @@unique([campusId, name])
+  @@index([universityId, active])
+  @@map("venues")
+}
+
+model VenueGate {
+  id           String        @id @default(uuid()) @db.Uuid
+  universityId String        @map("university_id") @db.Uuid
+  venueId      String        @map("venue_id") @db.Uuid
+  label        String        @db.VarChar(100)
+  active       Boolean       @default(true)
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  venue        Venue         @relation(fields: [venueId], references: [id], onDelete: Restrict)
+  eventStaff   EventStaff[]
+  scanSessions ScanSession[]
+  admissions   Admission[]
+  scanAttempts ScanAttempt[]
+
+  @@unique([venueId, label])
+  @@index([universityId, active])
+  @@map("venue_gates")
+}
+
+model Event {
+  id            String          @id @default(uuid()) @db.Uuid
+  universityId  String          @map("university_id") @db.Uuid
+  campusId      String          @map("campus_id") @db.Uuid
+  societyId     String          @map("society_id") @db.Uuid
+  venueId       String          @map("venue_id") @db.Uuid
+  slug          String          @db.VarChar(140)
+  title         String          @db.VarChar(200)
+  description   String          @db.Text
+  status        EventStatus     @default(DRAFT)
+  visibility    EventVisibility @default(CAMPUS_ONLY)
+  startsAt      DateTime        @map("starts_at") @db.Timestamptz(6)
+  endsAt        DateTime        @map("ends_at") @db.Timestamptz(6)
+  timezone      String          @default("Asia/Karachi") @db.VarChar(100)
+  capacity      Int
+  policyVersion String          @default("draft-v1") @map("policy_version") @db.VarChar(100)
+  createdAt     DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  university    University      @relation(fields: [universityId], references: [id], onDelete: Restrict)
+  campus        Campus          @relation(fields: [campusId], references: [id], onDelete: Restrict)
+  society       Society         @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  venue         Venue           @relation(fields: [venueId], references: [id], onDelete: Restrict)
+  ticketTypes   TicketType[]
+  orders        Order[]
+  tickets       Ticket[]
+  staff         EventStaff[]
+  scanSessions  ScanSession[]
+  admissions    Admission[]
+  scanAttempts  ScanAttempt[]
+
+  @@unique([universityId, slug])
+  @@index([universityId, status, visibility, startsAt])
+  @@map("events")
+}
+
+model TicketType {
+  id           String           @id @default(uuid()) @db.Uuid
+  universityId String           @map("university_id") @db.Uuid
+  eventId      String           @map("event_id") @db.Uuid
+  name         String           @db.VarChar(120)
+  priceMinor   Int              @map("price_minor")
+  currency     String           @default("PKR") @db.Char(3)
+  perUserLimit Int              @default(1) @map("per_user_limit")
+  salesStart   DateTime         @map("sales_start") @db.Timestamptz(6)
+  salesEnd     DateTime         @map("sales_end") @db.Timestamptz(6)
+  active       Boolean          @default(true)
+  createdAt    DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  event        Event            @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  inventory    TicketInventory?
+  orderItems   OrderItem[]
+  tickets      Ticket[]
+
+  @@unique([eventId, name])
+  @@index([universityId, eventId, active])
+  @@map("ticket_types")
+}
+
+model TicketInventory {
+  id           String     @id @default(uuid()) @db.Uuid
+  universityId String     @map("university_id") @db.Uuid
+  ticketTypeId String     @unique @map("ticket_type_id") @db.Uuid
+  capacity     Int
+  reserved     Int        @default(0)
+  issued       Int        @default(0)
+  version      Int        @default(0)
+  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+  ticketType   TicketType @relation(fields: [ticketTypeId], references: [id], onDelete: Restrict)
+
+  @@index([universityId, ticketTypeId])
+  @@map("ticket_inventory")
+}
+
+model Order {
+  id             String      @id @default(uuid()) @db.Uuid
+  universityId   String      @map("university_id") @db.Uuid
+  buyerId        String      @map("buyer_id") @db.Uuid
+  eventId        String      @map("event_id") @db.Uuid
+  currency       String      @db.Char(3)
+  subtotalMinor  Int         @map("subtotal_minor")
+  feeMinor       Int         @map("fee_minor")
+  taxMinor       Int         @map("tax_minor")
+  totalMinor     Int         @map("total_minor")
+  status         OrderStatus @default(CREATED)
+  policySnapshot Json        @map("policy_snapshot")
+  confirmedAt    DateTime?   @map("confirmed_at") @db.Timestamptz(6)
+  createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+  university     University  @relation(fields: [universityId], references: [id], onDelete: Restrict)
+  buyer          User        @relation(fields: [buyerId], references: [id], onDelete: Restrict)
+  event          Event       @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  items          OrderItem[]
+
+  @@index([universityId, buyerId, createdAt])
+  @@index([universityId, eventId, status])
+  @@map("orders")
+}
+
+model OrderItem {
+  id             String     @id @default(uuid()) @db.Uuid
+  universityId   String     @map("university_id") @db.Uuid
+  orderId        String     @map("order_id") @db.Uuid
+  ticketTypeId   String     @map("ticket_type_id") @db.Uuid
+  quantity       Int
+  unitPriceMinor Int        @map("unit_price_minor")
+  feeMinor       Int        @map("fee_minor")
+  taxMinor       Int        @map("tax_minor")
+  createdAt      DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+  order          Order      @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  ticketType     TicketType @relation(fields: [ticketTypeId], references: [id], onDelete: Restrict)
+  tickets        Ticket[]
+
+  @@index([universityId, orderId])
+  @@map("order_items")
+}
+
+model Ticket {
+  id           String             @id @default(uuid()) @db.Uuid
+  universityId String             @map("university_id") @db.Uuid
+  eventId      String             @map("event_id") @db.Uuid
+  ticketTypeId String             @map("ticket_type_id") @db.Uuid
+  orderItemId  String             @map("order_item_id") @db.Uuid
+  ownerId      String             @map("owner_id") @db.Uuid
+  status       TicketStatus       @default(ACTIVE)
+  issuedAt     DateTime           @map("issued_at") @db.Timestamptz(6)
+  checkedInAt  DateTime?          @map("checked_in_at") @db.Timestamptz(6)
+  createdAt    DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+  event        Event              @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  ticketType   TicketType         @relation(fields: [ticketTypeId], references: [id], onDelete: Restrict)
+  orderItem    OrderItem          @relation(fields: [orderItemId], references: [id], onDelete: Restrict)
+  owner        User               @relation("TicketOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  credentials  TicketCredential[]
+  admission    Admission?
+  scanAttempts ScanAttempt[]
+
+  @@index([universityId, ownerId, status])
+  @@index([universityId, eventId, status])
+  @@map("tickets")
+}
+
+model TicketCredential {
+  id                   String    @id @default(uuid()) @db.Uuid
+  universityId         String    @map("university_id") @db.Uuid
+  ticketId             String    @map("ticket_id") @db.Uuid
+  credentialHash       String    @unique @map("credential_hash") @db.Char(64)
+  credentialCiphertext String    @map("credential_ciphertext") @db.Text
+  credentialIv         String    @map("credential_iv") @db.VarChar(24)
+  credentialAuthTag    String    @map("credential_auth_tag") @db.VarChar(32)
+  version              Int
+  active               Boolean   @default(true)
+  revokedAt            DateTime? @map("revoked_at") @db.Timestamptz(6)
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  ticket               Ticket    @relation(fields: [ticketId], references: [id], onDelete: Restrict)
+
+  @@unique([ticketId, version])
+  @@index([universityId, credentialHash, active])
+  @@map("ticket_credentials")
+}
+
+model EventStaff {
+  id           String    @id @default(uuid()) @db.Uuid
+  universityId String    @map("university_id") @db.Uuid
+  eventId      String    @map("event_id") @db.Uuid
+  gateId       String    @map("gate_id") @db.Uuid
+  userId       String    @map("user_id") @db.Uuid
+  role         Role      @default(GATE_STAFF)
+  validFrom    DateTime  @map("valid_from") @db.Timestamptz(6)
+  validUntil   DateTime  @map("valid_until") @db.Timestamptz(6)
+  revokedAt    DateTime? @map("revoked_at") @db.Timestamptz(6)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  event        Event     @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  gate         VenueGate @relation(fields: [gateId], references: [id], onDelete: Restrict)
+  user         User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([eventId, gateId, userId])
+  @@index([universityId, userId, revokedAt, validUntil])
+  @@map("event_staff")
+}
+
+model ScanSession {
+  id           String        @id @default(uuid()) @db.Uuid
+  universityId String        @map("university_id") @db.Uuid
+  eventId      String        @map("event_id") @db.Uuid
+  gateId       String        @map("gate_id") @db.Uuid
+  scannerId    String        @map("scanner_id") @db.Uuid
+  deviceLabel  String        @map("device_label") @db.VarChar(100)
+  startedAt    DateTime      @default(now()) @map("started_at") @db.Timestamptz(6)
+  endedAt      DateTime?     @map("ended_at") @db.Timestamptz(6)
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  event        Event         @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  gate         VenueGate     @relation(fields: [gateId], references: [id], onDelete: Restrict)
+  scanner      User          @relation(fields: [scannerId], references: [id], onDelete: Restrict)
+  attempts     ScanAttempt[]
+
+  @@index([universityId, scannerId, endedAt])
+  @@map("scan_sessions")
+}
+
+model Admission {
+  id           String    @id @default(uuid()) @db.Uuid
+  universityId String    @map("university_id") @db.Uuid
+  ticketId     String    @unique @map("ticket_id") @db.Uuid
+  eventId      String    @map("event_id") @db.Uuid
+  gateId       String    @map("gate_id") @db.Uuid
+  scannerId    String    @map("scanner_id") @db.Uuid
+  admittedAt   DateTime  @map("admitted_at") @db.Timestamptz(6)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  ticket       Ticket    @relation(fields: [ticketId], references: [id], onDelete: Restrict)
+  event        Event     @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  gate         VenueGate @relation(fields: [gateId], references: [id], onDelete: Restrict)
+  scanner      User      @relation(fields: [scannerId], references: [id], onDelete: Restrict)
+
+  @@index([universityId, eventId, admittedAt])
+  @@map("admissions")
+}
+
+model ScanAttempt {
+  id            String           @id @default(uuid()) @db.Uuid
+  universityId  String           @map("university_id") @db.Uuid
+  ticketId      String?          @map("ticket_id") @db.Uuid
+  eventId       String           @map("event_id") @db.Uuid
+  gateId        String           @map("gate_id") @db.Uuid
+  scannerId     String           @map("scanner_id") @db.Uuid
+  scanSessionId String           @map("scan_session_id") @db.Uuid
+  requestId     String           @unique @map("request_id") @db.Uuid
+  outcome       AdmissionOutcome
+  createdAt     DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  ticket        Ticket?          @relation(fields: [ticketId], references: [id], onDelete: Restrict)
+  event         Event            @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  gate          VenueGate        @relation(fields: [gateId], references: [id], onDelete: Restrict)
+  scanner       User             @relation(fields: [scannerId], references: [id], onDelete: Restrict)
+  scanSession   ScanSession      @relation(fields: [scanSessionId], references: [id], onDelete: Restrict)
+
+  @@index([universityId, eventId, createdAt])
+  @@map("scan_attempts")
+}
+
+model AuditEvent {
+  id             String   @id @default(uuid()) @db.Uuid
+  universityId   String?  @map("university_id") @db.Uuid
+  actorId        String?  @map("actor_id") @db.Uuid
+  action         String   @db.VarChar(160)
+  targetType     String   @map("target_type") @db.VarChar(100)
+  targetId       String   @map("target_id") @db.Uuid
+  beforeRedacted Json?    @map("before_redacted")
+  afterRedacted  Json?    @map("after_redacted")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([universityId, createdAt])
+  @@index([targetType, targetId, createdAt])
+  @@map("audit_events")
+}
+
+model OutboxEvent {
+  id            String       @id @default(uuid()) @db.Uuid
+  universityId  String?      @map("university_id") @db.Uuid
+  aggregateType String       @map("aggregate_type") @db.VarChar(100)
+  aggregateId   String       @map("aggregate_id") @db.Uuid
+  eventType     String       @map("event_type") @db.VarChar(160)
+  payload       Json
+  status        OutboxStatus @default(PENDING)
+  attempts      Int          @default(0)
+  availableAt   DateTime     @default(now()) @map("available_at") @db.Timestamptz(6)
+  publishedAt   DateTime?    @map("published_at") @db.Timestamptz(6)
+  createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([status, availableAt])
+  @@index([universityId, aggregateType, aggregateId])
+  @@map("outbox_events")
+}
+
+model IdempotencyKey {
+  id           String   @id @default(uuid()) @db.Uuid
+  universityId String   @map("university_id") @db.Uuid
+  actorId      String   @map("actor_id") @db.Uuid
+  operation    String   @db.VarChar(100)
+  key          String   @db.VarChar(200)
+  requestHash  String   @map("request_hash") @db.Char(64)
+  responseJson Json?    @map("response_json")
+  expiresAt    DateTime @map("expires_at") @db.Timestamptz(6)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([universityId, actorId, operation, key])
+  @@index([expiresAt])
+  @@map("idempotency_keys")
+}

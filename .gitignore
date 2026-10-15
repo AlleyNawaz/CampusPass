@@ -1,0 +1,15 @@
+node_modules/
+.cache/
+.pnpm-store/
+.turbo/
+.next/
+dist/
+coverage/
+.env
+.env.local
+*.log
+*.tsbuildinfo
+apps/api/prisma/dev.db
+apps/api/generated/
+apps/*/package-lock.json
+packages/*/package-lock.json
