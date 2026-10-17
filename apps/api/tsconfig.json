@@ -6,9 +6,10 @@
     "outDir": "dist",
     "rootDir": "src",
     "declaration": false,
+    "sourceMap": false,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "types": ["node"]
+    "types": ["node", "@fastify/cookie"]
   },
   "include": ["src/**/*.ts"]
 }

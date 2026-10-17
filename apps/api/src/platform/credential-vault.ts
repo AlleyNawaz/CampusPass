@@ -1,7 +1,6 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 
 const ALGORITHM = "aes-256-gcm";
-const DEV_ONLY_KEY = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
 
 export interface SealedCredential {
   ciphertext: string;
@@ -13,11 +12,6 @@ function encryptionKey(): Buffer {
   const encoded = process.env.TICKET_CREDENTIAL_ENCRYPTION_KEY_BASE64;
   if (!encoded) {
     throw new Error("TICKET_CREDENTIAL_ENCRYPTION_KEY_BASE64 is required");
-  }
-  if (process.env.NODE_ENV === "production" && encoded === DEV_ONLY_KEY) {
-    throw new Error(
-      "The development credential key cannot be used in production",
-    );
   }
   const key = Buffer.from(encoded, "base64");
   if (key.length !== 32) {

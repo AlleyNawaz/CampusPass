@@ -1,6 +1,20 @@
-import { Controller, Get, Query } from "@nestjs/common";
+import {
+  BadRequestException,
+  Controller,
+  Get,
+  Query,
+  UseGuards,
+} from "@nestjs/common";
 import { ApiQuery, ApiTags } from "@nestjs/swagger";
+import { z } from "zod";
 import { PrismaService } from "../../platform/prisma.service";
+import { RateLimit } from "../../platform/rate-limit.decorator";
+import { RateLimitGuard } from "../../platform/rate-limit.guard";
+
+const universitySlugSchema = z
+  .string()
+  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+  .max(100);
 
 @ApiTags("events")
 @Controller("events")
@@ -9,7 +23,18 @@ export class EventsController {
 
   @Get()
   @ApiQuery({ name: "university", required: false })
+  @RateLimit({ name: "events-list", limit: 120, windowSeconds: 60 })
+  @UseGuards(RateLimitGuard)
   async list(@Query("university") universitySlug?: string) {
+    if (
+      universitySlug &&
+      !universitySlugSchema.safeParse(universitySlug).success
+    ) {
+      throw new BadRequestException({
+        code: "VALIDATION_ERROR",
+        message: "Invalid university query parameter",
+      });
+    }
     const events = await this.prisma.event.findMany({
       where: {
         status: "PUBLISHED",

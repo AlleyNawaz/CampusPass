@@ -19,7 +19,9 @@
     "format:check": "prettier --check .",
     "db:generate": "npm run prisma:generate --workspace @campuspass/api",
     "db:migrate": "npm run prisma:migrate --workspace @campuspass/api",
-    "db:seed": "npm run prisma:seed --workspace @campuspass/api"
+    "db:seed": "npm run prisma:seed --workspace @campuspass/api",
+    "test:security:http": "node tests/security/api-security.integration.mjs",
+    "test:security:static": "node tests/security/static-security.mjs"
   },
   "devDependencies": {
     "@types/node": "26.6.5",

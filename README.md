@@ -7,9 +7,10 @@ CampusPass is a NUST-first hypothesis for a multi-university event operations pl
 - Monorepo and CI-ready command structure.
 - Responsive public web shell.
 - NestJS API with health, free-ticket registration, and online ticket redemption endpoints.
-- PostgreSQL/Prisma schema plus an explicit SQL migration for the first vertical slice.
-- Deterministic domain tests, including 100-way inventory and redemption races.
-- Development-only synthetic authentication. It is refused in production mode.
+- PostgreSQL/Prisma schema, five applied migrations, forced tenant RLS, and a non-bypass runtime role.
+- Domain and real PostgreSQL/HTTP security tests, including concurrent redemption.
+- Password authentication with server-side opaque sessions, backend RBAC, CSRF protection, and privileged-role TOTP MFA.
+- Invitation registration, API rate limiting, strict validation, secure errors/CORS, and cookie/MFA frontend flows.
 
 Payments, real email, SMS, push, campus SSO, offline scanning, and production infrastructure are disabled.
 
@@ -19,6 +20,7 @@ Requirements: Node.js 22.12+, npm 11+, and Docker with Compose for database-back
 
 ```bash
 cp .env.example .env
+# Fill every blank password, authentication secret, encryption key, and seed password first.
 npm install
 docker compose up -d postgres
 npm run db:generate
@@ -38,6 +40,6 @@ npm test
 npm run build
 ```
 
-Development credentials and sample identifiers are printed only by the synthetic seed command. Never use them outside a local database.
+Synthetic identifiers are printed only by the seed command. Seed passwords are supplied through local environment variables and must never be reused outside a local database.
 
 See [implementation plan](docs/implementation-plan.md), [assumptions](docs/assumptions.md), [architecture](docs/architecture/overview.md), and [backlog](docs/product/backlog.md).

@@ -3,11 +3,13 @@ import { z } from "zod";
 export const currencySchema = z.string().regex(/^[A-Z]{3}$/);
 export const uuidSchema = z.string().uuid();
 
-export const freeRegistrationRequestSchema = z.object({
-  ticketTypeId: uuidSchema,
-  quantity: z.number().int().min(1).max(10),
-  policyVersion: z.string().min(1).max(100),
-});
+export const freeRegistrationRequestSchema = z
+  .object({
+    ticketTypeId: uuidSchema,
+    quantity: z.number().int().min(1).max(10),
+    policyVersion: z.string().min(1).max(100),
+  })
+  .strict();
 
 export const freeRegistrationResponseSchema = z.object({
   orderId: uuidSchema,
@@ -24,13 +26,15 @@ export const freeRegistrationResponseSchema = z.object({
   ),
 });
 
-export const redeemTicketRequestSchema = z.object({
-  credential: z.string().min(22).max(256),
-  eventId: uuidSchema,
-  gateId: uuidSchema,
-  scannerSessionId: uuidSchema,
-  requestId: uuidSchema,
-});
+export const redeemTicketRequestSchema = z
+  .object({
+    credential: z.string().min(22).max(256),
+    eventId: uuidSchema,
+    gateId: uuidSchema,
+    scannerSessionId: uuidSchema,
+    requestId: uuidSchema,
+  })
+  .strict();
 
 export const admissionOutcomeSchema = z.enum([
   "ADMITTED",

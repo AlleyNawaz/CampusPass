@@ -55,4 +55,4 @@ flowchart LR
 
 ## Vertical-slice acceptance boundary
 
-Sprint 0's API endpoints use real PostgreSQL transactions when a database is configured, but identity is deliberately development-only and synthetic. That means the slice may be exercised locally but is not a production authentication implementation. Email delivery is not silently mocked: verification mail is not implemented and its provider is marked disabled.
+The API endpoints use verified PostgreSQL transactions, forced tenant RLS, and a non-bypass runtime role. Synthetic header identity has been replaced by invitation/password authentication, opaque sessions, backend RBAC, CSRF protection, rate limiting, and privileged-role TOTP MFA. Cookie/MFA frontend flows and repeatable HTTP security tests are present. Recovery operations, payment-provider controls, private society policy, production infrastructure, interactive browser E2E, and independent review remain incomplete. Email and payment delivery are not silently mocked: both providers remain disabled.

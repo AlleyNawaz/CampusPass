@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { hashPassword } from "../src/auth/password";
 
 const prisma = new PrismaClient();
 
@@ -13,9 +14,21 @@ const ids = {
   student: "10000000-0000-4000-8000-000000000008",
   scanner: "10000000-0000-4000-8000-000000000009",
   scanSession: "10000000-0000-4000-8000-000000000010",
+  studentRoleGrant: "10000000-0000-4000-8000-000000000011",
+  scannerRoleGrant: "10000000-0000-4000-8000-000000000012",
 };
 
+function requiredSeedPassword(name: string): string {
+  const value = process.env[name];
+  if (!value || value.length < 12) {
+    throw new Error(`${name} must be set to at least 12 characters`);
+  }
+  return value;
+}
+
 async function main() {
+  const studentPassword = requiredSeedPassword("SEED_STUDENT_PASSWORD");
+  const scannerPassword = requiredSeedPassword("SEED_SCANNER_PASSWORD");
   await prisma.university.upsert({
     where: { id: ids.university },
     update: {},
@@ -92,6 +105,46 @@ async function main() {
       },
     });
   }
+  await prisma.passwordCredential.upsert({
+    where: { userId: ids.student },
+    update: { passwordHash: await hashPassword(studentPassword) },
+    create: {
+      userId: ids.student,
+      passwordHash: await hashPassword(studentPassword),
+    },
+  });
+  await prisma.passwordCredential.upsert({
+    where: { userId: ids.scanner },
+    update: { passwordHash: await hashPassword(scannerPassword) },
+    create: {
+      userId: ids.scanner,
+      passwordHash: await hashPassword(scannerPassword),
+    },
+  });
+  await prisma.roleGrant.upsert({
+    where: { id: ids.studentRoleGrant },
+    update: { revokedAt: null },
+    create: {
+      id: ids.studentRoleGrant,
+      universityId: ids.university,
+      userId: ids.student,
+      role: "STUDENT",
+      scopeType: "UNIVERSITY",
+      scopeId: ids.university,
+    },
+  });
+  await prisma.roleGrant.upsert({
+    where: { id: ids.scannerRoleGrant },
+    update: { revokedAt: null },
+    create: {
+      id: ids.scannerRoleGrant,
+      universityId: ids.university,
+      userId: ids.scanner,
+      role: "GATE_STAFF",
+      scopeType: "UNIVERSITY",
+      scopeId: ids.university,
+    },
+  });
   const startsAt = new Date("2030-10-15T10:00:00.000Z");
   const endsAt = new Date("2030-10-15T12:00:00.000Z");
   await prisma.event.upsert({

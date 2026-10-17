@@ -5,7 +5,7 @@
 - Modular monolith: Next.js web, NestJS API, worker process, shared TypeScript packages.
 - PostgreSQL is authoritative. Redis may later accelerate queues/TTL but never decides inventory or ticket state.
 - Prisma manages schema/client; transaction-critical paths use explicit SQL/conditional updates where Prisma abstractions are insufficient.
-- Web sessions will use secure HttpOnly cookies with CSRF defenses. Sprint 0 synthetic header auth is development-only and hard-fails in production.
+- Web sessions use random opaque tokens stored as hashes, secure HttpOnly cookies, session-bound CSRF tokens, database-backed RBAC, and privileged-role TOTP MFA. Caller-controlled development authentication has been removed.
 - Paid tickets, refunds, transfers, and offline scanning are feature-flagged off.
 
 ## Component diagram
