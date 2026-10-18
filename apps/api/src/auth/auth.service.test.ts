@@ -124,4 +124,40 @@ describe("AuthService identity boundary", () => {
     expect(actor.roles).toEqual(["STUDENT"]);
     expect(actor.roles).not.toContain("UNIVERSITY_ADMIN");
   });
+
+  it("changes a verified password, revokes other sessions, and audits the action", async () => {
+    const currentHash = await hashPassword("current-password-2026");
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([]),
+      passwordCredential: { update: vi.fn().mockResolvedValue({}) },
+      authSession: { updateMany: vi.fn().mockResolvedValue({ count: 2 }) },
+      auditEvent: { create: vi.fn().mockResolvedValue({}) },
+    };
+    const prisma = {
+      passwordCredential: {
+        findUnique: vi.fn().mockResolvedValue({ passwordHash: currentHash }),
+      },
+      $transaction: vi.fn(async (callback) => callback(tx)),
+    };
+    const service = new AuthService(prisma as unknown as PrismaService);
+    await service.changePassword(
+      {
+        userId: "10000000-0000-4000-8000-000000000008",
+        tenantId: "10000000-0000-4000-8000-000000000001",
+        roles: ["STUDENT"],
+        sessionId: "current-session",
+        csrfTokenHash: "csrf-hash",
+        mfaVerified: false,
+      },
+      "current-password-2026",
+      "replacement-password-2026",
+    );
+
+    expect(tx.authSession.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ id: { not: "current-session" } }),
+      }),
+    );
+    expect(tx.auditEvent.create).toHaveBeenCalledOnce();
+  });
 });

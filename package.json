@@ -12,7 +12,11 @@
   },
   "scripts": {
     "build": "turbo run build",
-    "dev": "turbo run dev --parallel",
+    "dev": "node scripts/dev.mjs",
+    "dev:setup": "node scripts/dev-setup.mjs",
+    "dev:db:start": "node scripts/dev-db.mjs start",
+    "dev:db:stop": "node scripts/dev-db.mjs stop",
+    "dev:db:status": "node scripts/dev-db.mjs status",
     "lint": "turbo run lint",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",

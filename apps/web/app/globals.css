@@ -176,6 +176,9 @@ p {
   border-radius: 12px;
   text-decoration: none;
   font-weight: 750;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
 }
 .button.primary {
   background: var(--blue);
@@ -612,4 +615,237 @@ footer {
 
 .security-note code {
   font-size: 0.86rem;
+}
+
+.muted-copy,
+.auth-footnote {
+  color: var(--muted);
+  line-height: 1.6;
+}
+.auth-footnote {
+  margin-bottom: 0;
+  text-align: center;
+  font-size: 14px;
+}
+.auth-footnote a {
+  color: var(--blue);
+  font-weight: 750;
+}
+.form-success {
+  margin: 0;
+  color: #08705f;
+  font-weight: 700;
+}
+
+.dashboard-shell,
+.account-shell {
+  max-width: 1240px;
+  min-height: 75vh;
+  margin: auto;
+  padding: 64px 32px 120px;
+}
+.dashboard-hero {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 32px;
+  padding: 52px;
+  color: var(--white);
+  border-radius: 28px;
+  background:
+    radial-gradient(
+      circle at 90% 10%,
+      rgba(27, 216, 188, 0.34),
+      transparent 28%
+    ),
+    linear-gradient(145deg, #102b60, var(--navy));
+}
+.dashboard-hero h1,
+.account-shell h1 {
+  margin-bottom: 14px;
+  font-size: clamp(38px, 5vw, 64px);
+  letter-spacing: -0.055em;
+}
+.dashboard-hero .muted-copy {
+  max-width: 620px;
+  margin-bottom: 0;
+  color: #c7d5eb;
+}
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin: 18px 0 72px;
+}
+.metric-grid article {
+  display: grid;
+  gap: 6px;
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--white);
+}
+.metric-grid strong {
+  color: var(--navy);
+  font-size: 34px;
+}
+.metric-grid span,
+.credential-panel span,
+.history-list span {
+  color: var(--muted);
+  font-size: 13px;
+}
+.dashboard-section {
+  margin-top: 64px;
+}
+.dashboard-section h2 {
+  font-size: 34px;
+  letter-spacing: -0.035em;
+}
+.dashboard-section-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+}
+.wallet-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.wallet-card {
+  min-height: 350px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 30px;
+  padding: 28px;
+  overflow: hidden;
+  color: white;
+  border-radius: 24px;
+  background:
+    radial-gradient(
+      circle at 95% 5%,
+      rgba(21, 212, 181, 0.38),
+      transparent 30%
+    ),
+    linear-gradient(145deg, #153b80, var(--navy));
+  box-shadow: 0 22px 55px rgba(7, 21, 45, 0.18);
+}
+.wallet-card h3 {
+  margin-bottom: 10px;
+  font-size: 30px;
+}
+.wallet-card p {
+  color: #cbd7ec;
+}
+.credential-panel {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.16);
+}
+.credential-panel span {
+  color: #aebfdb;
+}
+.credential-panel code {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.history-list {
+  display: grid;
+  gap: 10px;
+}
+.history-list article {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--white);
+}
+.history-list article > div {
+  display: grid;
+  gap: 5px;
+}
+.history-list article > div:last-child {
+  text-align: right;
+}
+.empty-state.compact {
+  margin-top: 20px;
+  padding: 40px 24px;
+}
+.loading-state {
+  min-height: 45vh;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+.settings-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 0.75fr);
+  gap: 72px;
+  align-items: start;
+}
+.settings-layout > form:last-child {
+  grid-column: 2;
+}
+.security-summary {
+  display: grid;
+  gap: 1px;
+  margin-top: 36px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--border);
+}
+.security-summary div {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 16px 18px;
+  background: var(--white);
+}
+.security-summary dt {
+  color: var(--muted);
+}
+.security-summary dd {
+  margin: 0;
+  text-align: right;
+  font-weight: 700;
+}
+
+@media (max-width: 780px) {
+  .dashboard-shell,
+  .account-shell {
+    padding: 36px 20px 80px;
+  }
+  .dashboard-hero {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 32px 24px;
+  }
+  .metric-grid,
+  .wallet-grid,
+  .settings-layout {
+    grid-template-columns: 1fr;
+  }
+  .metric-grid {
+    margin-bottom: 48px;
+  }
+  .settings-layout {
+    gap: 38px;
+  }
+  .settings-layout > form:last-child {
+    grid-column: 1;
+  }
+  .history-list article {
+    flex-direction: column;
+  }
+  .history-list article > div:last-child {
+    text-align: left;
+  }
 }

@@ -20,3 +20,14 @@ export const totpCodeSchema = z
     code: z.string().regex(/^\d{6}$/),
   })
   .strict();
+
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(12).max(128),
+    newPassword: z.string().min(12).max(128),
+  })
+  .strict()
+  .refine((value) => value.currentPassword !== value.newPassword, {
+    message: "New password must be different",
+    path: ["newPassword"],
+  });

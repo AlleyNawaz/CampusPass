@@ -16,20 +16,17 @@ Payments, real email, SMS, push, campus SSO, offline scanning, and production in
 
 ## Local setup
 
-Requirements: Node.js 22.12+, npm 11+, and Docker with Compose for database-backed API use.
+Requirements: Node.js 22.12+, npm 11+, and PostgreSQL 16. On macOS, the setup script automatically uses Homebrew PostgreSQL 16 and creates an isolated CampusPass cluster on port `55432`; it does not modify the default Homebrew cluster.
 
 ```bash
-cp .env.example .env
-# Fill every blank password, authentication secret, encryption key, and seed password first.
 npm install
-docker compose up -d postgres
-npm run db:generate
-npm run db:migrate
-npm run db:seed
+npm run dev:setup
 npm run dev
 ```
 
 Web: `http://localhost:3000` · API: `http://localhost:3001/v1` · OpenAPI: `http://localhost:3001/docs`
+
+`dev:setup` generates an untracked mode-`0600` `.env`, initializes or reuses only `.campuspass-local/postgres-16`, applies migrations, and seeds synthetic accounts. Seed passwords remain in `.env` and are never printed. Stop the app with `Ctrl+C`; stop or restart its isolated database with `npm run dev:db:stop` and `npm run dev:db:start`.
 
 ## Verification
 

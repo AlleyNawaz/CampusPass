@@ -6,6 +6,7 @@ import {
 import { Prisma, Role } from "@prisma/client";
 import { normalizeEmail } from "@campuspass/validation";
 import { PrismaService } from "../platform/prisma.service";
+import { setTenantContext } from "../platform/tenant-context";
 import {
   ACCOUNT_LOCK_MS,
   AUTH_CHALLENGE_TTL_MS,
@@ -379,6 +380,82 @@ export class AuthService {
     await this.prisma.authSession.updateMany({
       where: { userId, revokedAt: null },
       data: { revokedAt: new Date() },
+    });
+  }
+
+  async account(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        emailNormalized: true,
+        displayName: true,
+        locale: true,
+        timezone: true,
+        emailVerifiedAt: true,
+        university: { select: { id: true, name: true, slug: true } },
+      },
+    });
+    if (!user) throw new UnauthorizedException("Authentication required");
+    return {
+      id: user.id,
+      email: user.emailNormalized,
+      displayName: user.displayName,
+      locale: user.locale,
+      timezone: user.timezone,
+      emailVerified: user.emailVerifiedAt !== null,
+      university: user.university,
+    };
+  }
+
+  async changePassword(
+    actor: AuthenticatedActor,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<void> {
+    const credential = await this.prisma.passwordCredential.findUnique({
+      where: { userId: actor.userId },
+    });
+    if (
+      !credential ||
+      !(await verifyPassword(credential.passwordHash, currentPassword))
+    ) {
+      throw this.invalidCredentials();
+    }
+    const passwordHash = await hashPassword(newPassword);
+    await this.prisma.$transaction(async (tx) => {
+      if (actor.tenantId) {
+        await setTenantContext(tx, actor.tenantId, actor.userId);
+      }
+      await tx.passwordCredential.update({
+        where: { userId: actor.userId },
+        data: {
+          passwordHash,
+          passwordChangedAt: new Date(),
+          failedAttempts: 0,
+          lockedUntil: null,
+        },
+      });
+      await tx.authSession.updateMany({
+        where: {
+          userId: actor.userId,
+          id: { not: actor.sessionId },
+          revokedAt: null,
+        },
+        data: { revokedAt: new Date() },
+      });
+      if (actor.tenantId) {
+        await tx.auditEvent.create({
+          data: {
+            universityId: actor.tenantId,
+            actorId: actor.userId,
+            action: "auth.password.changed",
+            targetType: "user",
+            targetId: actor.userId,
+            afterRedacted: { otherSessionsRevoked: true },
+          },
+        });
+      }
     });
   }
 

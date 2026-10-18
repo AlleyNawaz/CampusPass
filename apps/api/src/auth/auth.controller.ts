@@ -17,6 +17,7 @@ import {
   sessionCookieName,
 } from "./auth.constants";
 import {
+  changePasswordSchema,
   loginSchema,
   registrationSchema,
   totpCodeSchema,
@@ -171,12 +172,13 @@ export class AuthController {
     identity: "actor",
   })
   @UseGuards(SessionAuthGuard, RateLimitGuard)
-  session(@CurrentActor() actor: AuthenticatedActor) {
+  async session(@CurrentActor() actor: AuthenticatedActor) {
     return {
       userId: actor.userId,
       tenantId: actor.tenantId,
       roles: actor.roles,
       mfaVerified: actor.mfaVerified,
+      account: await this.auth.account(actor.userId),
     };
   }
 
@@ -195,6 +197,27 @@ export class AuthController {
   ) {
     await this.auth.revokeSession(actor.sessionId);
     this.clearAuthCookies(reply);
+  }
+
+  @Post("change-password")
+  @HttpCode(204)
+  @RateLimit({
+    name: "auth-change-password",
+    limit: 5,
+    windowSeconds: 900,
+    identity: "actor",
+  })
+  @UseGuards(SessionAuthGuard, RateLimitGuard, CsrfGuard)
+  async changePassword(
+    @CurrentActor() actor: AuthenticatedActor,
+    @Body() body: unknown,
+  ) {
+    const input = parse(changePasswordSchema, body);
+    await this.auth.changePassword(
+      actor,
+      input.currentPassword,
+      input.newPassword,
+    );
   }
 
   @Post("logout-all")

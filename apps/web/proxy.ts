@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export function proxy(request: NextRequest) {
+  const protectedPath = ["/account", "/dashboard"].some(
+    (path) =>
+      request.nextUrl.pathname === path ||
+      request.nextUrl.pathname.startsWith(`${path}/`),
+  );
+  if (protectedPath && !request.cookies.get("campuspass_session")?.value) {
+    const login = new URL("/login", request.url);
+    login.searchParams.set("returnTo", request.nextUrl.pathname);
+    return NextResponse.redirect(login);
+  }
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
   const development = process.env.NODE_ENV !== "production";
   let apiOrigin = "'self'";

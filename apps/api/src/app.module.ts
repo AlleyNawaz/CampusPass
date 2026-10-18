@@ -10,6 +10,8 @@ import { EventsController } from "./modules/events/events.controller";
 import { HealthController } from "./modules/health/health.controller";
 import { OrdersController } from "./modules/orders/orders.controller";
 import { OrdersService } from "./modules/orders/orders.service";
+import { StudentsController } from "./modules/students/students.controller";
+import { StudentsService } from "./modules/students/students.service";
 import { PrismaService } from "./platform/prisma.service";
 import { RateLimitGuard } from "./platform/rate-limit.guard";
 import { RateLimitService } from "./platform/rate-limit.service";
@@ -21,6 +23,7 @@ import { RateLimitService } from "./platform/rate-limit.service";
     EventsController,
     OrdersController,
     AdmissionController,
+    StudentsController,
   ],
   providers: [
     PrismaService,
@@ -30,6 +33,7 @@ import { RateLimitService } from "./platform/rate-limit.service";
     RolesGuard,
     OrdersService,
     AdmissionService,
+    StudentsService,
     RateLimitService,
     RateLimitGuard,
   ],

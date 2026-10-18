@@ -1,20 +1,5 @@
-import Link from "next/link";
-
-type EventResult = {
-  id: string;
-  slug: string;
-  title: string;
-  startsAt: string;
-  timezone: string;
-  university: { name: string };
-  society: { name: string };
-  ticketTypes: Array<{
-    id: string;
-    name: string;
-    priceMinor: number;
-    currency: string;
-  }>;
-};
+import { SiteHeader } from "../../components/site-header";
+import { EventsExplorer, type EventResult } from "./events-explorer";
 
 export const dynamic = "force-dynamic";
 
@@ -39,70 +24,41 @@ export default async function EventsPage() {
   const { events, unavailable } = await loadEvents();
   return (
     <>
-      <header className="site-header">
-        <Link className="brand" href="/">
-          <span className="brand-mark">CP</span>
-          <span>CampusPass</span>
-        </Link>
-        <nav aria-label="Primary navigation">
-          <Link href="/">Home</Link>
-          <span className="status-pill">Synthetic data only</span>
-        </nav>
-      </header>
-      <main id="main" className="events-shell">
-        <div className="section-heading">
-          <p className="eyebrow">Explore</p>
-          <h1>Events worth showing up for.</h1>
-          <p>
-            Only approved public events should appear here. This local build
-            intentionally uses synthetic records.
+      <SiteHeader context="Discover" />
+      <main id="main" className="discover-shell">
+        <section className="discover-intro">
+          <p className="micro-label">
+            <span /> Islamabad · Campus events
           </p>
-        </div>
+          <h1>
+            Find your next
+            <br />
+            <em>good story.</em>
+          </h1>
+          <p>
+            Workshops, talks, competitions, and nights worth leaving your room
+            for—curated across your campus.
+          </p>
+        </section>
         {unavailable ? (
-          <section className="empty-state" role="status">
+          <section className="empty-state refined" role="status">
             <span aria-hidden="true">↻</span>
             <h2>The local API is unavailable</h2>
             <p>
               Start PostgreSQL and the API, then retry. No cached private event
               data is shown.
             </p>
-            <Link className="button secondary" href="/events">
+            <a className="button secondary" href="/events">
               Retry
-            </Link>
+            </a>
           </section>
         ) : events.length === 0 ? (
-          <section className="empty-state">
+          <section className="empty-state refined">
             <h2>No public demo events yet</h2>
             <p>Seed the local database to add one synthetic event.</p>
           </section>
         ) : (
-          <div className="event-grid">
-            {events.map((event) => (
-              <article className="event-card" key={event.id}>
-                <div className="event-art" aria-hidden="true">
-                  <span>{event.title.slice(0, 2).toUpperCase()}</span>
-                </div>
-                <div className="event-body">
-                  <p className="ticket-kicker">
-                    {event.university.name} · {event.society.name}
-                  </p>
-                  <h2>{event.title}</h2>
-                  <p>
-                    {new Intl.DateTimeFormat("en-PK", {
-                      dateStyle: "long",
-                      timeStyle: "short",
-                      timeZone: event.timezone,
-                    }).format(new Date(event.startsAt))}
-                  </p>
-                  <p className="price">
-                    {event.ticketTypes.some((tier) => tier.priceMinor === 0)
-                      ? "Free registration"
-                      : "Paid tickets disabled"}
-                  </p>
-                </div>
-              </article>
-            ))}
-          </div>
+          <EventsExplorer events={events} />
         )}
       </main>
     </>

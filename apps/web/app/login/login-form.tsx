@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Link from "next/link";
 import { apiRequest } from "../../lib/api";
 
 type LoginResult = {
@@ -16,6 +17,15 @@ export function LoginForm() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
+  function destination() {
+    const requested = new URLSearchParams(window.location.search).get(
+      "returnTo",
+    );
+    return requested?.startsWith("/") && !requested.startsWith("//")
+      ? requested
+      : "/dashboard";
+  }
+
   async function login(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
@@ -30,7 +40,7 @@ export function LoginForm() {
         }),
       });
       if (result.status === "AUTHENTICATED") {
-        window.location.replace("/account");
+        window.location.replace(destination());
         return;
       }
       if (result.status === "MFA_ENROLLMENT_REQUIRED") {
@@ -63,7 +73,7 @@ export function LoginForm() {
           body: JSON.stringify({ code: form.get("code") }),
         },
       );
-      window.location.replace("/account");
+      window.location.replace(destination());
     } catch (caught) {
       setError(
         caught instanceof Error ? caught.message : "Verification failed.",
@@ -134,6 +144,9 @@ export function LoginForm() {
       <button className="button primary" disabled={busy} type="submit">
         {busy ? "Signing in…" : "Sign in"}
       </button>
+      <p className="auth-footnote">
+        Have an invitation? <Link href="/register">Create your account</Link>
+      </p>
     </form>
   );
 }

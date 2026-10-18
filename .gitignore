@@ -19,6 +19,7 @@ coverage/
 *.jks
 *.keystore
 *.mobileprovision
+.campuspass-local/
 apps/api/prisma/dev.db
 apps/api/generated/
 apps/*/package-lock.json
